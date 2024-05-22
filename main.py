@@ -5,7 +5,7 @@ import asyncio
 import curses
 from  itertools import cycle
 
-SPACE_KEY_CODE = 32
+# SPACE_KEY_CODE = 32
 LEFT_KEY_CODE = 260
 RIGHT_KEY_CODE = 261
 UP_KEY_CODE = 259
@@ -47,8 +47,8 @@ def read_controls(canvas):
         if pressed_key_code == LEFT_KEY_CODE:
             columns_direction = -1
 
-        if pressed_key_code == SPACE_KEY_CODE:
-            space_pressed = True
+        # if pressed_key_code == SPACE_KEY_CODE:
+        #     space_pressed = True
 
     return rows_direction, columns_direction, space_pressed
 
@@ -95,9 +95,7 @@ def get_frame_size(text):
 
 
 async def animate_spaceship(canvas):
-    sprites_spaceship = [
-
-    ]
+    sprites_spaceship = []
     with open(os.path.join('sprites', 'rocket_frame_1.txt')) as file:
         sprites_spaceship.append(file.read())
     with open(os.path.join('sprites', 'rocket_frame_2.txt')) as file:
@@ -105,11 +103,22 @@ async def animate_spaceship(canvas):
 
     rows, columns = get_frame_size(sprites_spaceship[0])
     max_row, max_column = canvas.getmaxyx()
-    count = 0
+    r = 0
+    c = 0
     for spaceship in cycle(sprites_spaceship):
-        draw_frame(canvas, max_row // 2 - rows // 2, max_column // 2 - columns // 2, spaceship, negative=False)
-        await Sleep(0.5)
-        draw_frame(canvas, max_row // 2 - rows // 2, max_column // 2 - columns // 2, spaceship, negative=True)
+        canvas.nodelay(True)
+        control = read_controls(canvas)
+        if control:
+            r += control[0]
+            c += control[1]
+
+        if (max_row // 2 + rows // 2 + r >= max_row-1) or (max_column // 2 + columns // 2 + c >= max_column-1) \
+            or (max_row // 2 - rows // 2 + r <= 0) or  (max_column // 2 - columns // 2 + c <= 0):
+            r -= control[0]
+            c -= control[1]
+        draw_frame(canvas, max_row // 2 - rows // 2 + r, max_column // 2 - columns // 2 + c, spaceship, negative=False)
+        await Sleep(0.1)
+        draw_frame(canvas, max_row // 2 - rows // 2 + r, max_column // 2 - columns // 2 + c, spaceship, negative=True)
 
 
 
