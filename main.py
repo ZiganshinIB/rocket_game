@@ -103,22 +103,22 @@ async def animate_spaceship(canvas):
 
     rows, columns = get_frame_size(sprites_spaceship[0])
     max_row, max_column = canvas.getmaxyx()
-    r = 0
-    c = 0
+    rows_direction = 0
+    columns_direction = 0
     for spaceship in cycle(sprites_spaceship):
         canvas.nodelay(True)
         control = read_controls(canvas)
         if control:
-            r += control[0]
-            c += control[1]
+            rows_direction += control[0]
+            columns_direction += control[1]
 
-        if (max_row // 2 + rows // 2 + r >= max_row-1) or (max_column // 2 + columns // 2 + c >= max_column-1) \
-            or (max_row // 2 - rows // 2 + r <= 0) or  (max_column // 2 - columns // 2 + c <= 0):
-            r -= control[0]
-            c -= control[1]
-        draw_frame(canvas, max_row // 2 - rows // 2 + r, max_column // 2 - columns // 2 + c, spaceship, negative=False)
+        if (max_row // 2 + rows // 2 + rows_direction >= max_row-1) or (max_column // 2 + columns // 2 + columns_direction >= max_column-1) \
+            or (max_row // 2 - rows // 2 + rows_direction <= 0) or  (max_column // 2 - columns // 2 + columns_direction <= 0):
+            rows_direction -= control[0]
+            columns_direction -= control[1]
+        draw_frame(canvas, max_row // 2 - rows // 2 + rows_direction, max_column // 2 - columns // 2 + columns_direction, spaceship, negative=False)
         await Sleep(0.1)
-        draw_frame(canvas, max_row // 2 - rows // 2 + r, max_column // 2 - columns // 2 + c, spaceship, negative=True)
+        draw_frame(canvas, max_row // 2 - rows // 2 + rows_direction, max_column // 2 - columns // 2 + columns_direction, spaceship, negative=True)
 
 
 
