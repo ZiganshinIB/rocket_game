@@ -18,7 +18,7 @@ class EventLoopCommand:
 
 
 class Sleep(EventLoopCommand):
-    def __init__(self, seconds):
+    def __init__(self, seconds=0.1):
         self.seconds = seconds
 
 
@@ -107,8 +107,8 @@ async def animate_spaceship(canvas):
     max_row, max_column = canvas.getmaxyx()
     rows_offset = 0
     columns_offset = 0
+    canvas.nodelay(True)
     for spaceship in cycle(sprites_spaceship):
-        canvas.nodelay(True)
         rows_direction, columns_direction, _ = read_controls(canvas)
         rows_offset += rows_direction
         columns_offset += columns_direction
@@ -116,54 +116,28 @@ async def animate_spaceship(canvas):
             or (max_row // 2 - rows // 2 + rows_offset <= 0) or (max_column // 2 - columns // 2 + columns_offset <= 0):
             rows_offset -= rows_direction
             columns_offset -= columns_direction
-        draw_frame(canvas, max_row // 2 - rows // 2 + rows_offset, max_column // 2 - columns // 2 + columns_offset, spaceship, negative=False)
-        await Sleep(0.1)
+        draw_frame(canvas, max_row // 2 - rows // 2 + rows_offset, max_column // 2 - columns // 2 + columns_offset,
+                   spaceship, negative=False)
+        await Sleep()
         draw_frame(canvas, max_row // 2 - rows // 2 + rows_offset, max_column // 2 - columns // 2 + columns_offset, spaceship, negative=True)
 
 
-async def blink(canvas, row, column, symbol='*'):
+async def blink(canvas, row, column, symbol='*', delay=0.1):
     while True:
+        for _ in range(round(delay/0.1)):
+            await Sleep()
         canvas.addstr(row, column, symbol, curses.A_DIM)
-        await Sleep(2)
-
+        for _ in range(20):
+            await Sleep()
         canvas.addstr(row, column, symbol)
-        await Sleep(0.3)
-
+        for _ in range(3):
+            await Sleep()
         canvas.addstr(row, column, symbol, curses.A_BOLD)
-        await Sleep(0.5)
-
+        for _ in range(5):
+            await Sleep()
         canvas.addstr(row, column, symbol)
-        await Sleep(0.3)
-        
-
-async def fire(canvas, start_row, start_column, rows_speed=-0.3, columns_speed=0):
-    """Display animation of gun shot, direction and speed can be specified."""
-
-    row, column = start_row, start_column
-
-    canvas.addstr(round(row), round(column), '*')
-    await Sleep(0.1)
-
-    canvas.addstr(round(row), round(column), 'O')
-    await Sleep(0.1)
-    canvas.addstr(round(row), round(column), ' ')
-
-    row += rows_speed
-    column += columns_speed
-
-    symbol = '-' if columns_speed else '|'
-
-    rows, columns = canvas.getmaxyx()
-    max_row, max_column = rows - 1, columns - 1
-
-    curses.beep()
-
-    while 0 < row < max_row and 0 < column < max_column:
-        canvas.addstr(round(row), round(column), symbol)
-        await Sleep(0.1)
-        canvas.addstr(round(row), round(column), ' ')
-        row += rows_speed
-        column += columns_speed
+        for _ in range(3):
+            await Sleep()
 
 
 def draw(canvas):
@@ -172,37 +146,23 @@ def draw(canvas):
     coroutines = ([blink(canvas=canvas,
                          row=random.randint(1, row_max - 2),
                          column=random.randint(1, col_max - 2),
-                         symbol=random.choice('+*.:')
+                         symbol=random.choice('+*.:'),
+                         delay=random.random() * 3
                          ) for i in range(100)]
                   + [spaceship])
-    
-    sleeping_coroutines = [
-        [random.random()*5, star] for star in coroutines
-    ] + [[0, spaceship]]
 
     curses.curs_set(False)
     canvas.border()
-
-    while sleeping_coroutines:
-        min_timeout, _ = min(sleeping_coroutines, key=lambda x: x[0])
-        sleeping_coroutines = [
-            [timeout - min_timeout, star] for timeout, star in sleeping_coroutines
-        ]
-        time.sleep(min_timeout)
-
-        active_coroutines = [coroutine for coroutine in sleeping_coroutines if coroutine[0] <= 0]
-        sleeping_coroutines = [coroutines for coroutines in sleeping_coroutines if coroutines[0] > 0]
-
-        for _, coroutine in active_coroutines.copy():
+    while coroutines:
+        for coroutine in coroutines:
             try:
-                sleep_command = coroutine.send(None)
+                coroutine.send(None)
                 canvas.refresh()
             except StopIteration:
                 continue
             except RuntimeError:
                 continue
-            seconds_to_sleep = sleep_command.seconds
-            sleeping_coroutines.append([seconds_to_sleep, coroutine])
+        time.sleep(0.1)
 
 
 if __name__ == '__main__':
