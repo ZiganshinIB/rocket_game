@@ -157,11 +157,12 @@ def draw(canvas):
         for coroutine in coroutines:
             try:
                 coroutine.send(None)
-                canvas.refresh()
+
             except StopIteration:
-                continue
+                coroutines.remove(coroutine)
             except RuntimeError:
-                continue
+                coroutines.remove(coroutine)
+        canvas.refresh()
         time.sleep(0.1)
 
 
