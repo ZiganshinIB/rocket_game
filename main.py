@@ -157,7 +157,6 @@ def draw(canvas):
         for coroutine in coroutines:
             try:
                 coroutine.send(None)
-
             except StopIteration:
                 coroutines.remove(coroutine)
             except RuntimeError:
