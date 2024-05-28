@@ -154,7 +154,7 @@ def draw(canvas):
     curses.curs_set(False)
     canvas.border()
     while coroutines:
-        for coroutine in coroutines:
+        for coroutine in coroutines.copy():
             try:
                 coroutine.send(None)
             except StopIteration:
