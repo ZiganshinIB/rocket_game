@@ -18,6 +18,13 @@ COROUTINES = []
 GARBAGE_FRAMES = []
 SPACESHIP_FRAMES = []
 
+
+async def sleep(tics=1):
+    """Sleep for 'tics' tics. 1 tics = TIC_TIMEOUT seconds"""
+    for _ in range(tics):
+        await asyncio.sleep(0)
+
+
 def read_controls(canvas):
     """Read keys pressed and returns tuple witl controls state."""
 
@@ -107,7 +114,7 @@ async def animate_spaceship(canvas, row, column, max_row, max_column):
             previous_frame_index = next_frame_index
             row = next_row
             column = next_column
-            await asyncio.sleep(0)
+            await sleep()
 
 
 async def fly_garbage(canvas, column, garbage_frame, speed=0.5):
@@ -118,7 +125,7 @@ async def fly_garbage(canvas, column, garbage_frame, speed=0.5):
     row = 0
     while row < rows_number:
         draw_frame(canvas, row, column, garbage_frame)
-        await asyncio.sleep(0)
+        await sleep()
         draw_frame(canvas, row, column, garbage_frame, negative=True)
         row += speed
 
@@ -126,20 +133,15 @@ async def fly_garbage(canvas, column, garbage_frame, speed=0.5):
 async def blink(canvas, row, column, symbol='*', delay=0.1):
     """Draw the specified symbol in a blink"""
     while True:
-        for _ in range(round(delay/TIC_TIMEOUT)):
-            await asyncio.sleep(0)
+        await sleep(round(delay/TIC_TIMEOUT))
         canvas.addstr(row, column, symbol, curses.A_DIM)
-        for _ in range(20):
-            await asyncio.sleep(0)
+        await sleep(20)
         canvas.addstr(row, column, symbol)
-        for _ in range(3):
-            await asyncio.sleep(0)
+        await sleep(3)
         canvas.addstr(row, column, symbol, curses.A_BOLD)
-        for _ in range(5):
-            await asyncio.sleep(0)
+        await sleep(5)
         canvas.addstr(row, column, symbol)
-        for _ in range(3):
-            await asyncio.sleep(0)
+        await sleep(5)
 
 
 async def fill_orbit_with_garbage(canvas, p=0.15):
@@ -151,7 +153,7 @@ async def fill_orbit_with_garbage(canvas, p=0.15):
             COROUTINES.append(
                 fly_garbage(canvas, random.randint(1, columns_number - frame_columns - 2), frame)
             )
-        await asyncio.sleep(0)
+        await sleep()
 
 
 def draw(canvas):
