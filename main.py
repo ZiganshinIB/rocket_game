@@ -9,6 +9,7 @@ import physics
 
 TIC_TIMEOUT = 0.1 # 0.1 seconds
 SPACE_KEY_CODE = 32
+OBSTACLES = []
 LEFT_KEY_CODE = 260
 RIGHT_KEY_CODE = 261
 UP_KEY_CODE = 259
