@@ -5,12 +5,15 @@ import asyncio
 import curses
 from  itertools import cycle
 
+import physics
+
 TIC_TIMEOUT = 0.1 # 0.1 seconds
-# SPACE_KEY_CODE = 32
+SPACE_KEY_CODE = 32
 LEFT_KEY_CODE = 260
 RIGHT_KEY_CODE = 261
 UP_KEY_CODE = 259
 DOWN_KEY_CODE = 258
+SPEEDS = [0, 0] # [row, column]
 
 #
 COROUTINES = []
@@ -50,8 +53,8 @@ def read_controls(canvas):
         if pressed_key_code == LEFT_KEY_CODE:
             columns_direction = -1
 
-        # if pressed_key_code == SPACE_KEY_CODE:
-        #     space_pressed = True
+        if pressed_key_code == SPACE_KEY_CODE:
+            space_pressed = True
 
     return rows_direction, columns_direction, space_pressed
 
@@ -95,6 +98,35 @@ def get_frame_size(text):
     columns = max([len(line) for line in lines])
     return rows, columns
 
+async def fire(canvas, start_row, start_column, rows_speed=-0.3, columns_speed=0):
+    """Display animation of gun shot, direction and speed can be specified."""
+
+    row, column = start_row, start_column
+
+    canvas.addstr(round(row), round(column), '*')
+    await sleep()
+
+    canvas.addstr(round(row), round(column), 'O')
+    await sleep()
+    canvas.addstr(round(row), round(column), ' ')
+
+    row += rows_speed
+    column += columns_speed
+
+    symbol = '-' if columns_speed else '|'
+
+    rows, columns = canvas.getmaxyx()
+    max_row, max_column = rows - 1, columns - 1
+
+    curses.beep()
+
+    while 0 < row < max_row and 0 < column < max_column:
+        canvas.addstr(round(row), round(column), symbol)
+        await sleep()
+        canvas.addstr(round(row), round(column), ' ')
+        row += rows_speed
+        column += columns_speed
+
 
 async def animate_spaceship(canvas, row, column, max_row, max_column):
     rows, columns = get_frame_size(SPACESHIP_FRAMES[1])
@@ -102,11 +134,16 @@ async def animate_spaceship(canvas, row, column, max_row, max_column):
     next_row = row
     next_column = column
     previous_frame_index = 0
+    x_speed, y_speed = SPEEDS
     while True:
-        rows_direction, columns_direction, _ = read_controls(canvas)
-        if rows_direction ** 2 or columns_direction ** 2:
-            next_row = min(max(1, row + rows_direction), max_row - rows - 1)
-            next_column = min(max(1, column + columns_direction), max_column - columns - 1)
+        rows_direction, columns_direction, space_pressed = read_controls(canvas)
+        if space_pressed:
+            COROUTINES.append(
+                fire(canvas, row, column + 2)
+            )
+        x_speed, y_speed = physics.update_speed(x_speed, y_speed, rows_direction, columns_direction)
+        next_row = min(max(1, next_row + x_speed), max_row - rows - 1)
+        next_column = min(max(1, next_column + y_speed), max_column - columns - 1)
         for index in range(len(SPACESHIP_FRAMES)):
             draw_frame(canvas, row, column, SPACESHIP_FRAMES[previous_frame_index], negative=True)
             next_frame_index = (previous_frame_index + index) % 2
