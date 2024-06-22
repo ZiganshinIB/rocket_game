@@ -7,6 +7,7 @@ import curses_tools
 from  itertools import cycle
 
 import physics
+from obstacles import Obstacle, show_obstacles
 
 TIC_TIMEOUT = 0.1 # 0.1 seconds
 OBSTACLES = []
@@ -84,14 +85,30 @@ async def animate_spaceship(canvas, row, column, max_row, max_column):
 async def fly_garbage(canvas, column, garbage_frame, speed=0.5):
     """Animate garbage, flying from top to bottom. Сolumn position will stay same, as specified on start."""
     rows_number, columns_number = canvas.getmaxyx()
-    column = max(column, 0)
-    column = min(column, columns_number - 1)
-    row = 0
+    frame_rows, frame_columns = curses_tools.get_frame_size(garbage_frame)
+    column = min(max(column, 0), columns_number - frame_columns - 1)
+    row = 2
+    obstacle = Obstacle(row, column, 1, frame_columns)
+    OBSTACLES.append(obstacle)
+    while row <= frame_rows:
+        tmp_frame = "\n".join(garbage_frame.split("\n")[-int(row):])
+        curses_tools.draw_frame(canvas, 1, column, tmp_frame)
+        obstacle.rows_size = int(row)
+        await asyncio.sleep(0)
+        curses_tools.draw_frame(canvas, 1, column, tmp_frame, negative=True)
+        row += speed
+    row = 1
     while row < rows_number:
         curses_tools.draw_frame(canvas, row, column, garbage_frame)
+        obstacle.row = int(row)
         await sleep()
         curses_tools.draw_frame(canvas, row, column, garbage_frame, negative=True)
+        #
+        if row + frame_rows + 1 >= rows_number:
+            garbage_frame = "\n".join(garbage_frame.split("\n")[:-1])
         row += speed
+
+    OBSTACLES.remove(obstacle)
 
 
 async def blink(canvas, row, column, symbol='*', delay=0.1):
@@ -139,6 +156,7 @@ def draw(canvas):
                              row=random.randint(0, max_row - 1),
                              column=random.randint(0, max_col - 1),
                              delay=random.random()*3) for _ in range(100)])
+    COROUTINES.append(show_obstacles(canvas, OBSTACLES))
     while True:
         for coroutine in COROUTINES.copy():
             try:
