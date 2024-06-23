@@ -11,6 +11,7 @@ from obstacles import Obstacle, show_obstacles
 
 TIC_TIMEOUT = 0.1 # 0.1 seconds
 OBSTACLES = []
+OBSTACLES_COLLISIONS = []
 SPEEDS = [0, 0] # start speed [row, column]
 
 #
@@ -52,8 +53,9 @@ async def fire(canvas, start_row, start_column, rows_speed=-0.3, columns_speed=0
         canvas.addstr(round(row), round(column), symbol)
         for obstacle in OBSTACLES:
             if obstacle.has_collision(row, column):
+                OBSTACLES_COLLISIONS.append(obstacle)
                 canvas.addstr(round(row), round(column), ' ')
-                return 0
+                return
         await sleep()
         canvas.addstr(round(row), round(column), ' ')
         row += rows_speed
@@ -95,14 +97,18 @@ async def fly_garbage(canvas, column, garbage_frame, speed=0.5):
     obstacle = Obstacle(row, column, 1, frame_columns)
     OBSTACLES.append(obstacle)
     while row <= frame_rows:
+        if obstacle in OBSTACLES_COLLISIONS:
+            break
         tmp_frame = "\n".join(garbage_frame.split("\n")[-int(row):])
         curses_tools.draw_frame(canvas, 1, column, tmp_frame)
         obstacle.rows_size = int(row)
-        await asyncio.sleep(0)
+        await sleep()
         curses_tools.draw_frame(canvas, 1, column, tmp_frame, negative=True)
         row += speed
     row = 1
     while row < rows_number:
+        if obstacle in OBSTACLES_COLLISIONS:
+            break
         curses_tools.draw_frame(canvas, row, column, garbage_frame)
         obstacle.row = int(row)
         await sleep()
@@ -160,7 +166,7 @@ def draw(canvas):
                              row=random.randint(0, max_row - 1),
                              column=random.randint(0, max_col - 1),
                              delay=random.random()*3) for _ in range(100)])
-    COROUTINES.append(show_obstacles(canvas, OBSTACLES))
+    # COROUTINES.append(show_obstacles(canvas, OBSTACLES))
     while True:
         for coroutine in COROUTINES.copy():
             try:
