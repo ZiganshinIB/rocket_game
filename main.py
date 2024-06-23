@@ -4,27 +4,24 @@ import time
 import asyncio
 import curses
 import curses_tools
-from  itertools import cycle
-
 import physics
 from explosion import explode
-from obstacles import Obstacle, show_obstacles
+from obstacles import Obstacle
 
-TIC_TIMEOUT = 0.1 # 0.1 seconds
+TIC_TIMEOUT = 0.1
 YEAR = 1957
 OBSTACLES = []
 OBSTACLES_COLLISIONS = []
-SPEEDS = [0, 0] # start speed [row, column]
-#
+SPEEDS = [0, 0]
+
 COROUTINES = []
-#
 GARBAGE_FRAMES = []
 SPACESHIP_FRAMES = []
 GAME_OVER_FRAME = ''
 
 
 async def sleep(tics=1):
-    """Sleep for 'tics' tics. 1 tics = TIC_TIMEOUT seconds"""
+    """Sleep for 'tics' tics. 1 tic = TIC_TIMEOUT seconds"""
     for _ in range(tics):
         await asyncio.sleep(0)
 
@@ -72,7 +69,7 @@ async def fire(canvas, start_row, start_column, rows_speed=-0.3, columns_speed=0
         column += columns_speed
 
 
-async def animate_spaceship(canvas, row, column, max_row, max_column):
+async def animate_spaceship(canvas, row, column):
     rows, columns = curses_tools.get_frame_size(SPACESHIP_FRAMES[1])
     max_row, max_column = canvas.getmaxyx()
     next_row = row
@@ -142,7 +139,7 @@ async def fly_garbage(canvas, column, garbage_frame, speed=0.5):
 async def show_year(canvas):
     phrase = ""
     global YEAR
-    PHRASES = {
+    phrases = {
         1957: "First Sputnik",
         1961: "Gagarin flew!",
         1969: "Armstrong got on the moon!",
@@ -152,11 +149,10 @@ async def show_year(canvas):
         2011: 'Messenger launch to Mercury',
         2020: "Take the plasma gun! Shoot the garbage!",
     }
-    max_row, max_column = canvas.getmaxyx()
     while True:
         canvas.addstr(1, 2, "Currunt year: {}".format(YEAR))
-        if YEAR in PHRASES:
-            phrase = PHRASES[YEAR]
+        if YEAR in phrases:
+            phrase = phrases[YEAR]
         canvas.addstr(2, 2, phrase)
         YEAR += 1
         await sleep(15)
@@ -216,9 +212,7 @@ def draw(canvas):
     COROUTINES.extend([
         animate_spaceship(canvas,
                           row=max_row // 2,
-                          column=max_col // 2,
-                          max_row=max_row,
-                          max_column=max_col),
+                          column=max_col // 2,),
         fill_orbit_with_garbage(canvas),
         show_year(canvas)
     ])
@@ -240,9 +234,9 @@ def draw(canvas):
 
 
 if __name__ == '__main__':
-    for file in os.listdir("sprites/garbage"):
-        if file.endswith(".txt"):
-            with open(os.path.join("sprites/garbage", file)) as file:
+    for file_name in os.listdir("sprites/garbage"):
+        if file_name.endswith(".txt"):
+            with open(os.path.join("sprites/garbage", file_name)) as file:
                 GARBAGE_FRAMES.append(file.read())
     with open(os.path.join('sprites', 'rocket_frame_1.txt')) as file:
         SPACESHIP_FRAMES.append(file.read())
