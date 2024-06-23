@@ -29,6 +29,7 @@ EXPLOSION_FRAMES = [
     """,
 ]
 
+
 async def explode(canvas, center_row, center_column):
     rows, columns = get_frame_size(EXPLOSION_FRAMES[0])
     corner_row = center_row - rows / 2
