@@ -11,10 +11,10 @@ from explosion import explode
 from obstacles import Obstacle, show_obstacles
 
 TIC_TIMEOUT = 0.1 # 0.1 seconds
+YEAR = 1957
 OBSTACLES = []
 OBSTACLES_COLLISIONS = []
 SPEEDS = [0, 0] # start speed [row, column]
-
 #
 COROUTINES = []
 #
@@ -81,7 +81,7 @@ async def animate_spaceship(canvas, row, column, max_row, max_column):
     x_speed, y_speed = SPEEDS
     while True:
         rows_direction, columns_direction, space_pressed = curses_tools.read_controls(canvas)
-        if space_pressed:
+        if space_pressed and YEAR >= 2020:
             COROUTINES.append(
                 fire(canvas, row, column + 2)
             )
@@ -139,6 +139,29 @@ async def fly_garbage(canvas, column, garbage_frame, speed=0.5):
     OBSTACLES.remove(obstacle)
 
 
+async def show_year(canvas):
+    phrase = ""
+    global YEAR
+    PHRASES = {
+        1957: "First Sputnik",
+        1961: "Gagarin flew!",
+        1969: "Armstrong got on the moon!",
+        1971: "First orbital space station Salute-1",
+        1981: "Flight of the Shuttle Columbia",
+        1998: 'ISS start building',
+        2011: 'Messenger launch to Mercury',
+        2020: "Take the plasma gun! Shoot the garbage!",
+    }
+    max_row, max_column = canvas.getmaxyx()
+    while True:
+        canvas.addstr(1, 2, "Currunt year: {}".format(YEAR))
+        if YEAR in PHRASES:
+            phrase = PHRASES[YEAR]
+        canvas.addstr(2, 2, phrase)
+        YEAR += 1
+        await sleep(15)
+
+
 async def blink(canvas, row, column, symbol='*', delay=0.1):
     """Draw the specified symbol in a blink"""
     while True:
@@ -153,16 +176,35 @@ async def blink(canvas, row, column, symbol='*', delay=0.1):
         await sleep(5)
 
 
-async def fill_orbit_with_garbage(canvas, p=0.15):
+async def fill_orbit_with_garbage(canvas):
     rows_number, columns_number = canvas.getmaxyx()
     while True:
-        if random.random() > (1 - p):
+        if YEAR < 1961:
+            await sleep()
+        else:
             frame = random.choice(GARBAGE_FRAMES)
-            frame_rows, frame_columns = curses_tools.get_frame_size(frame)
+            rows, columns = curses_tools.get_frame_size(frame)
             COROUTINES.append(
-                fly_garbage(canvas, random.randint(1, columns_number - frame_columns - 2), frame)
+                fly_garbage(canvas, random.randint(1, columns_number - columns - 2), frame)
             )
-        await sleep()
+            await sleep(get_garbage_delay_tics(YEAR))
+
+
+def get_garbage_delay_tics(year):
+    if year < 1961:
+        return None
+    elif year < 1969:
+        return 20
+    elif year < 1981:
+        return 14
+    elif year < 1995:
+        return 10
+    elif year < 2010:
+        return 8
+    elif year < 2020:
+        return 6
+    else:
+        return 2
 
 
 def draw(canvas):
@@ -177,7 +219,8 @@ def draw(canvas):
                           column=max_col // 2,
                           max_row=max_row,
                           max_column=max_col),
-        fill_orbit_with_garbage(canvas)
+        fill_orbit_with_garbage(canvas),
+        show_year(canvas)
     ])
     # star animation
     COROUTINES.extend([blink(canvas=canvas,
@@ -209,5 +252,6 @@ if __name__ == '__main__':
 
     with open(os.path.join('sprites', 'gameover.txt')) as file:
         GAME_OVER_FRAME = file.read()
+
     curses.update_lines_cols()
     curses.wrapper(draw)
