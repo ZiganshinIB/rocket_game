@@ -20,12 +20,21 @@ COROUTINES = []
 #
 GARBAGE_FRAMES = []
 SPACESHIP_FRAMES = []
+GAME_OVER_FRAME = ''
 
 
 async def sleep(tics=1):
     """Sleep for 'tics' tics. 1 tics = TIC_TIMEOUT seconds"""
     for _ in range(tics):
         await asyncio.sleep(0)
+
+
+async def game_over(canvas):
+    rows, columns = curses_tools.get_frame_size(GAME_OVER_FRAME)
+    max_row, max_column = canvas.getmaxyx()
+    while True:
+        curses_tools.draw_frame(canvas, (max_row - rows) / 2, (max_column - columns) / 2, GAME_OVER_FRAME)
+        await sleep()
 
 
 async def fire(canvas, start_row, start_column, rows_speed=-0.3, columns_speed=0):
@@ -81,6 +90,12 @@ async def animate_spaceship(canvas, row, column, max_row, max_column):
         next_column = min(max(1, next_column + y_speed), max_column - columns - 1)
         for index in range(len(SPACESHIP_FRAMES)):
             curses_tools.draw_frame(canvas, row, column, SPACESHIP_FRAMES[previous_frame_index], negative=True)
+            for obstacle in OBSTACLES:
+                if obstacle.has_collision(
+                        int(row), int(column), obj_size_rows=rows, obj_size_columns=columns):
+                    COROUTINES.append(explode(canvas, row + int(rows / 2), column + int(columns / 2)))
+                    await game_over(canvas)
+                    return
             next_frame_index = (previous_frame_index + index) % 2
             curses_tools.draw_frame(canvas, next_row, next_column, SPACESHIP_FRAMES[next_frame_index], negative=False)
             previous_frame_index = next_frame_index
@@ -191,5 +206,8 @@ if __name__ == '__main__':
 
     with open(os.path.join('sprites', 'rocket_frame_2.txt')) as file:
         SPACESHIP_FRAMES.append(file.read())
+
+    with open(os.path.join('sprites', 'gameover.txt')) as file:
+        GAME_OVER_FRAME = file.read()
     curses.update_lines_cols()
     curses.wrapper(draw)
