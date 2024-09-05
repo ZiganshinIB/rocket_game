@@ -4,7 +4,7 @@ import time
 import asyncio
 import curses
 import curses_tools
-import obstacles
+import obstacles as  obs
 import physics
 from explosion import explode
 from obstacles import Obstacle
@@ -214,7 +214,7 @@ def draw(canvas):
                              row=random.randint(0, max_row - 1),
                              column=random.randint(0, max_col - 1),
                              delay=random.random()*3) for _ in range(100)])
-    coroutines.append(obstacles.show_obstacles(canvas, obstacles))
+    coroutines.append(obs.show_obstacles(canvas, obstacles))
     while True:
         for coroutine in coroutines.copy():
             try:
